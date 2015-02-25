@@ -203,6 +203,48 @@ class MongoHandler:
         else:
             out('{"ok" : 1}')
         
+    def _count(self, args, out, name = None, db = None, collection = None):
+        """
+        query the database.
+        """
+
+        if type(args).__name__ != 'dict':
+            out('{"ok" : 0, "errmsg" : "_find must be a GET request"}')
+            return
+
+        conn = self._get_connection(name)
+        if conn == None:
+            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            return
+
+        if db == None or collection == None:
+            out('{"ok" : 0, "errmsg" : "db and collection must be defined"}')
+            return            
+
+        criteria = {}
+        if 'criteria' in args:
+            criteria = self._get_son(args['criteria'][0], out)
+            if criteria == None:
+                return
+
+        fields = None
+        if 'fields' in args:
+            fields = self._get_son(args['fields'][0], out)
+            if fields == None:
+                return
+
+        limit = 0
+        if 'limit' in args:
+            limit = int(args['limit'][0])
+
+        skip = 0
+        if 'skip' in args:
+            skip = int(args['skip'][0])
+
+        count = conn[db][collection].find(spec=criteria, fields=fields, limit=limit, skip=skip).count()
+     
+        out(json.dumps({"count": count}, default=json_util.default))
+            
     def _find(self, args, out, name = None, db = None, collection = None):
         """
         query the database.
